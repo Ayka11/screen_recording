@@ -1,0 +1,252 @@
+[
+  {
+    "id": "white-oak",
+    "name": "White Oak",
+    "type": "Common",
+    "identification": [
+      "Acorn with a warty cap",
+      "Light brown color",
+      "Smooth inner shell"
+    ],
+    "harvesting": {
+      "month": "October",
+      "viabilityTest": "Float test: viable acorns sink in water."
+    },
+    "dormancySecret": {
+      "method": "Stratification",
+      "details": "Cold stratification in fridge for 30-60 days."
+    },
+    "germinationDays": 14,
+    "longTermCare": {
+      "year1": "Protect from rodents using wire mesh.",
+      "year5": "Prune lower branches to encourage a strong central leader."
+    },
+    "funFact": "White oak wood is watertight and used to make whiskey barrels.",
+    "isLocked": false
+  },
+  {
+    "id": "sugar-maple",
+    "name": "Sugar Maple",
+    "type": "Common",
+    "identification": [
+      "Paired winged seeds (samaras)",
+      "Plump, rounded seed cavity",
+      "Greenish-yellow turning brown"
+    ],
+    "harvesting": {
+      "month": "September",
+      "viabilityTest": "Cut test: the inside should be firm and green/white."
+    },
+    "dormancySecret": {
+      "method": "Stratification",
+      "details": "Cold stratification in fridge for 60-90 days."
+    },
+    "germinationDays": 21,
+    "longTermCare": {
+      "year1": "Ensure consistent moisture; they are sensitive to drought.",
+      "year5": "Monitor for aphids and apply horticultural oil if needed."
+    },
+    "funFact": "It takes about 40 gallons of sap to make one gallon of maple syrup.",
+    "isLocked": false
+  },
+  {
+    "id": "elderberry",
+    "name": "Elderberry",
+    "type": "Common",
+    "identification": [
+      "Tiny, dark purple to black berries",
+      "Grow in umbrella-like clusters",
+      "Small, hard seeds inside the berry"
+    ],
+    "harvesting": {
+      "month": "August",
+      "viabilityTest": "Berries should be plump and dark; avoid green ones."
+    },
+    "dormancySecret": {
+      "method": "Stratification & Scarification",
+      "details": "Warm stratification for 60 days, then cold for 90 days."
+    },
+    "germinationDays": 30,
+    "longTermCare": {
+      "year1": "Weed aggressively around the base to reduce competition.",
+      "year5": "Coppice (cut back to the ground) to encourage vigorous new fruiting canes."
+    },
+    "funFact": "The stems are hollow and were historically used to make flutes.",
+    "isLocked": false
+  },
+  {
+    "id": "weeping-willow",
+    "name": "Weeping Willow",
+    "type": "Common",
+    "identification": [
+      "Tiny seeds attached to white, cottony fluff",
+      "Contained in small, green capsules",
+      "Extremely lightweight for wind dispersal"
+    ],
+    "harvesting": {
+      "month": "June",
+      "viabilityTest": "Seeds must be sown immediately; they lose viability in days."
+    },
+    "dormancySecret": {
+      "method": "None",
+      "details": "Sow immediately on moist soil surface; needs light to germinate."
+    },
+    "germinationDays": 3,
+    "longTermCare": {
+      "year1": "Keep soil constantly wet; they thrive in waterlogged conditions.",
+      "year5": "Inspect for willow blight and prune affected weeping branches."
+    },
+    "funFact": "Aspirin was originally derived from the bark of willow trees.",
+    "isLocked": false
+  },
+  {
+    "id": "american-sycamore",
+    "name": "American Sycamore",
+    "type": "Common",
+    "identification": [
+      "Fuzzy, spherical seed balls",
+      "Breaks apart into tiny, tufted seeds",
+      "Tan to brown color when mature"
+    ],
+    "harvesting": {
+      "month": "November",
+      "viabilityTest": "Seed balls should be brown and easily break apart."
+    },
+    "dormancySecret": {
+      "method": "Stratification",
+      "details": "Cold stratification in fridge for 30-45 days."
+    },
+    "germinationDays": 15,
+    "longTermCare": {
+      "year1": "Provide ample space; they grow incredibly fast.",
+      "year5": "Monitor for anthracnose disease, especially in wet springs."
+    },
+    "funFact": "It can grow to have the largest trunk diameter of any Eastern US hardwood.",
+    "isLocked": false
+  },
+  {
+    "id": "giant-sequoia",
+    "name": "Giant Sequoia",
+    "type": "Rare",
+    "identification": [
+      "Tiny, flat, oat-like seeds",
+      "Housed in egg-shaped, woody cones",
+      "Light brown with a papery wing"
+    ],
+    "harvesting": {
+      "month": "October",
+      "viabilityTest": "Cones must be dried to open; seeds should be plump, not flat."
+    },
+    "dormancySecret": {
+      "method": "Stratification",
+      "details": "Cold stratification in fridge for 30-60 days."
+    },
+    "germinationDays": 20,
+    "longTermCare": {
+      "year1": "Protect from direct, intense afternoon sun to prevent scorching.",
+      "year5": "Ensure excellent drainage; they are highly susceptible to root rot."
+    },
+    "funFact": "Their thick bark is fire-resistant, and they actually rely on fire to open their cones.",
+    "isLocked": true
+  },
+  {
+    "id": "bristlecone-pine",
+    "name": "Bristlecone Pine",
+    "type": "Ancient",
+    "identification": [
+      "Small, winged seeds",
+      "Found in dark purple, bristle-tipped cones",
+      "Resinous and sticky"
+    ],
+    "harvesting": {
+      "month": "September",
+      "viabilityTest": "Float test: viable seeds sink."
+    },
+    "dormancySecret": {
+      "method": "Stratification",
+      "details": "Cold stratification in fridge for 30 days."
+    },
+    "germinationDays": 25,
+    "longTermCare": {
+      "year1": "Plant in extremely well-draining, rocky soil.",
+      "year5": "Do not overwater or fertilize; they thrive in harsh, nutrient-poor conditions."
+    },
+    "funFact": "The oldest known living non-clonal organism on Earth is a Bristlecone Pine named Methuselah, over 4,800 years old.",
+    "isLocked": true
+  },
+  {
+    "id": "ginkgo-biloba",
+    "name": "Ginkgo Biloba",
+    "type": "Ancient",
+    "identification": [
+      "Plum-like, fleshy outer coating",
+      "Smooth, silvery-white inner nut",
+      "Emits a foul, rancid butter smell when ripe"
+    ],
+    "harvesting": {
+      "month": "November",
+      "viabilityTest": "Clean off the fleshy coat; the hard nut should feel heavy."
+    },
+    "dormancySecret": {
+      "method": "Stratification",
+      "details": "Warm stratification for 60 days, then cold for 60 days."
+    },
+    "germinationDays": 40,
+    "longTermCare": {
+      "year1": "Protect from late spring frosts which can kill new growth.",
+      "year5": "Minimal care needed; they are incredibly resilient to pollution and pests."
+    },
+    "funFact": "It is a 'living fossil', with no close living relatives, having survived the Hiroshima atomic blast.",
+    "isLocked": true
+  },
+  {
+    "id": "baobab",
+    "name": "Baobab",
+    "type": "Ancient",
+    "identification": [
+      "Large, kidney-shaped seeds",
+      "Embedded in a dry, powdery pulp",
+      "Hard, dark brown outer shell"
+    ],
+    "harvesting": {
+      "month": "May",
+      "viabilityTest": "Seeds should rattle inside the hard pod when shaken."
+    },
+    "dormancySecret": {
+      "method": "Scarification",
+      "details": "Nick the hard shell or soak in hot water for 24 hours."
+    },
+    "germinationDays": 10,
+    "longTermCare": {
+      "year1": "Keep warm and slightly dry; highly susceptible to damping off.",
+      "year5": "Repot into a larger container if growing indoors, as the taproot is massive."
+    },
+    "funFact": "Their massive trunks can store thousands of gallons of water to survive harsh droughts.",
+    "isLocked": true
+  },
+  {
+    "id": "dragon-blood-tree",
+    "name": "Dragon Blood Tree",
+    "type": "Rare",
+    "identification": [
+      "Small, round berries",
+      "Turn from green to black when ripe",
+      "Contain 1-3 hard seeds"
+    ],
+    "harvesting": {
+      "month": "March",
+      "viabilityTest": "Berries must be fully black; clean pulp immediately."
+    },
+    "dormancySecret": {
+      "method": "Scarification",
+      "details": "Lightly sand the seed coat and soak in warm water for 24 hours."
+    },
+    "germinationDays": 30,
+    "longTermCare": {
+      "year1": "Requires high humidity but very well-draining soil.",
+      "year5": "Ensure it receives full, intense sun to develop its iconic umbrella shape."
+    },
+    "funFact": "It bleeds a dark red resin, known as 'dragon's blood', used in ancient medicines and dyes.",
+    "isLocked": true
+  }
+]
