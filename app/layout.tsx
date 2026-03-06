@@ -1,16 +1,5 @@
 import type {Metadata} from 'next';
-import { Inter, Playfair_Display } from 'next/font/google';
-import './globals.css'; // Global styles
-
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-sans',
-});
-
-const playfair = Playfair_Display({
-  subsets: ['latin'],
-  variable: '--font-serif',
-});
+import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Lignum',
@@ -19,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
-    <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
+    <html lang="en">
       <body className="bg-[#F9F6F0] text-[#1A3622] font-sans antialiased min-h-screen flex flex-col" suppressHydrationWarning>
         {children}
       </body>
