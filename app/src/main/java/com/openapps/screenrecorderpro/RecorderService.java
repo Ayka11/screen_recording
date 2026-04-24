@@ -94,6 +94,7 @@ public class RecorderService extends Service{
     private VirtualDisplay mVirtualDisplay;
     private MediaProjectionCallback mMediaProjectionCallback;
     private MediaRecorder mMediaRecorder;
+    private CameraRecorder cameraRecorder;
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -197,6 +198,18 @@ public class RecorderService extends Service{
 
                 //The service is started as foreground service and hence has to be stopped
                 stopForeground(true);
+                break;
+            case Const.CAMERA_RECORDING_START:
+                startCameraRecording();
+                break;
+            case Const.CAMERA_RECORDING_PAUSE:
+                pauseCameraRecording();
+                break;
+            case Const.CAMERA_RECORDING_RESUME:
+                resumeCameraRecording();
+                break;
+            case Const.CAMERA_RECORDING_STOP:
+                stopCameraRecording();
                 break;
         }
         return START_STICKY;
@@ -476,6 +489,119 @@ public class RecorderService extends Service{
             return;
         }
         destroyMediaProjection();
+    }
+
+    /**
+     * Start camera recording with configured quality settings
+     */
+    private void startCameraRecording() {
+        if (!isRecording) {
+            try {
+                getValues();
+                RecordingConfig config = loadRecordingConfig();
+                
+                String fileName = "CameraRecording_" + new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date()) + ".mp4";
+                File videoDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES), Const.APPDIR);
+                if (!videoDir.exists()) {
+                    videoDir.mkdirs();
+                }
+                File videoFile = new File(videoDir, fileName);
+                
+                cameraRecorder = new CameraRecorder(this, config);
+                cameraRecorder.startCameraRecording(videoFile.getAbsolutePath(), 90);
+                
+                isRecording = true;
+                
+                // Start floating controls if enabled
+                if (useFloatingControls) {
+                    Intent floatingControlsIntent = new Intent(this, FloatingControlService.class);
+                    startService(floatingControlsIntent);
+                    bindService(floatingControlsIntent, serviceConnection, BIND_AUTO_CREATE);
+                }
+                
+                if (isBound) {
+                    floatingControlService.setRecordingState(Const.RecordingState.RECORDING);
+                }
+                
+                Toast.makeText(this, R.string.screen_recording_started_toast, Toast.LENGTH_SHORT).show();
+                Log.d(Const.TAG, "Camera recording started: " + videoFile.getAbsolutePath());
+                
+                // Start foreground notification
+                startTime = System.currentTimeMillis();
+                startNotificationForeGround(createNotification(null).build(), Const.SCREEN_RECORDER_NOTIFICATION_ID);
+                
+            } catch (Exception e) {
+                Log.e(Const.TAG, "Error starting camera recording", e);
+                Toast.makeText(this, "Failed to start camera recording: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                isRecording = false;
+            }
+        }
+    }
+
+    /**
+     * Stop camera recording
+     */
+    private void stopCameraRecording() {
+        if (isRecording && cameraRecorder != null) {
+            cameraRecorder.stopCameraRecording();
+            isRecording = false;
+            
+            if (isBound) {
+                unbindService(serviceConnection);
+            }
+            
+            stopForeground(true);
+            Toast.makeText(this, "Camera recording stopped", Toast.LENGTH_SHORT).show();
+            Log.d(Const.TAG, "Camera recording stopped");
+        }
+    }
+
+    /**
+     * Pause camera recording (Android 7.0+)
+     */
+    private void pauseCameraRecording() {
+        if (isRecording && cameraRecorder != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            cameraRecorder.pauseCameraRecording();
+            if (isBound) {
+                floatingControlService.setRecordingState(Const.RecordingState.PAUSED);
+            }
+            Toast.makeText(this, "Camera recording paused", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * Resume camera recording (Android 7.0+)
+     */
+    private void resumeCameraRecording() {
+        if (cameraRecorder != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            cameraRecorder.resumeCameraRecording();
+            isRecording = true;
+            if (isBound) {
+                floatingControlService.setRecordingState(Const.RecordingState.RECORDING);
+            }
+            Toast.makeText(this, "Camera recording resumed", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * Load recording configuration from SharedPreferences
+     */
+    private RecordingConfig loadRecordingConfig() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        RecordingConfig config = new RecordingConfig();
+        
+        // Load recording mode
+        String modeStr = prefs.getString(Const.RECORDING_MODE, "SCREEN");
+        config.setMode(RecordingConfig.RecordingMode.valueOf(modeStr));
+        
+        // Load quality setting
+        String qualityStr = prefs.getString(Const.RECORDING_QUALITY, "HIGH");
+        config.setQuality(RecordingConfig.Quality.valueOf(qualityStr));
+        
+        // Load audio enabled setting
+        config.setAudioEnabled(prefs.getBoolean(Const.RECORDING_AUDIO_ENABLED, true));
+        
+        return config;
     }
 
     private class MediaProjectionCallback extends MediaProjection.Callback {

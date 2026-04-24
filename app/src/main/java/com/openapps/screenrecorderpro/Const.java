@@ -18,10 +18,17 @@ public class Const {
     static final String SCREEN_RECORDING_PAUSE = "com.openapps.screenrecorderpro.services.action.pauserecording";
     static final String SCREEN_RECORDING_RESUME = "com.openapps.screenrecorderpro.services.action.resumerecording";
     static final String SCREEN_RECORDING_STOP = "com.openapps.screenrecorderpro.services.action.stoprecording";
+    static final String CAMERA_RECORDING_START = "com.openapps.screenrecorderpro.services.action.startcamerarecording";
+    static final String CAMERA_RECORDING_PAUSE = "com.openapps.screenrecorderpro.services.action.pausecamerarecording";
+    static final String CAMERA_RECORDING_RESUME = "com.openapps.screenrecorderpro.services.action.resumecamerarecording";
+    static final String CAMERA_RECORDING_STOP = "com.openapps.screenrecorderpro.services.action.stopcamerarecording";
     static final int SCREEN_RECORDER_NOTIFICATION_ID = 5001;
     static final int SCREEN_RECORDER_SHARE_NOTIFICATION_ID = 5002;
     static final String RECORDER_INTENT_DATA = "recorder_intent_data";
     static final String RECORDER_INTENT_RESULT = "recorder_intent_result";
+    static final String RECORDING_MODE = "recording_mode";
+    static final String RECORDING_QUALITY = "recording_quality";
+    static final String RECORDING_AUDIO_ENABLED = "recording_audio_enabled";
     public static final String TAG = "SCREENRECORDER";
     public static final String APPDIR = "screenrecorder";
 
