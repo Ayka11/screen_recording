@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (c) ScreenCastPro 2017.
+  -->
+<!-- This should have been localized to xml-25 but few custom launchers like action3 laucher
+which supports shortcuts in lower api isnt happy about it -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="record"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut"
+        android:shortcutShortLabel="@string/shortcut_short_label"
+        android:shortcutLongLabel="@string/shortcut_long_label"
+        android:shortcutDisabledMessage="@string/shortcut_disabled_message">
+        <intent
+            android:action="@string/app_shortcut_action"
+            android:targetPackage="com.openapps.screenrecorderpro"
+            android:targetClass="com.openapps.screenrecorderpro.MainActivity" />
+    </shortcut>
+    <!-- Specify more shortcuts here. -->
+</shortcuts>

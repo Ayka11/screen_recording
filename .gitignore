@@ -1,0 +1,38 @@
+*.iml
+.gradle
+/local.properties
+.idea
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+*.apk
+*.json
+
+# Keystore - sensitive files
+keystore/password
+*.jks
+*.keystore
+
+# Build outputs
+/outputs
+/symbols
+/transforms
+/generated
+/intermediates
+
+# IDE caches
+.caches/
+.classpath
+.project
+.settings/
+
+# OS files
+Thumbs.db
+.gitkeep
+
+# Logs
+*.log
+
+# APK folder
+/apk

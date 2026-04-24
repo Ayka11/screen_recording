@@ -1,0 +1,5 @@
+/*
+ * Copyright (c) ScreenCastPro 2017.
+ */
+
+include ':app'

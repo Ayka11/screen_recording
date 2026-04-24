@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (c) ScreenCastPro 2017.
+  -->
+
+<resources>
+    <color name="colorPrimary">#3F4241</color>
+    <color name="colorPrimaryDark">#EA4800</color>
+    <color name="colorAccent">#FF5722</color>
+    <color name="windowBackground">#FFFFFF</color>
+    <color name="navigationBarColor">#000000</color>
+</resources>
