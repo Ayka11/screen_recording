@@ -42,8 +42,19 @@ const defaultSettings = {
   audioEnabled: true,
   showFloatingControls: true,
   countdown: 3,
-  saveLocation: 'downloads'
+  saveLocation: 'downloads',
+  recordingMode: 'screen' // 'screen' or 'camera'
 };
+// Camera permission helper
+async function checkCameraPermission() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    stream.getTracks().forEach(track => track.stop());
+    return { granted: true, error: null };
+  } catch (error) {
+    return { granted: false, error: error.message || 'Camera permission denied' };
+  }
+}
 
 // Video quality options
 const qualityOptions = {
@@ -67,6 +78,7 @@ function App() {
   const [showPermissionsModal, setShowPermissionsModal] = useState(false);
   const [permissionStatus, setPermissionStatus] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [cameraStream, setCameraStream] = useState(null);
   
   // Initialize managers
   const [permissionManager] = useState(() => new PermissionManager());
@@ -151,10 +163,99 @@ function App() {
     try {
       setError(null);
       setIsLoading(true);
-      
-      // Check permissions first
+
+      if (settings.recordingMode === 'camera') {
+        // Camera recording mode
+        const cameraPerm = await checkCameraPermission();
+        if (!cameraPerm.granted) {
+          setError(cameraPerm.error || 'Camera permission is required to start recording');
+          setShowPermissionsModal(true);
+          return;
+        }
+
+        setCountdown(settings.countdown);
+        for (let i = settings.countdown; i > 0; i--) {
+          setCountdown(i);
+          await new Promise(r => setTimeout(r, 1000));
+        }
+        setCountdown(0);
+
+        // Get camera stream
+        const cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: qualityOptions[settings.videoQuality].width },
+            height: { ideal: qualityOptions[settings.videoQuality].height },
+            frameRate: { ideal: settings.frameRate }
+          },
+          audio: settings.audioEnabled
+        });
+        setCameraStream(cameraStream);
+        streamRef.current = cameraStream;
+
+        // Setup MediaRecorder
+        const mimeType = getSupportedMimeType();
+        const mediaRecorder = new MediaRecorder(cameraStream, {
+          mimeType,
+          videoBitsPerSecond: qualityOptions[settings.videoQuality].bitrate
+        });
+        mediaRecorderRef.current = mediaRecorder;
+        chunksRef.current = [];
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) {
+            chunksRef.current.push(e.data);
+          }
+        };
+        mediaRecorder.onerror = (event) => {
+          const error = new Error(`MediaRecorder error: ${event.error?.message || 'Unknown recording error'}`);
+          errorHandler.handleRecordingError(error, { event });
+          setError(error.message);
+          stopRecording();
+        };
+        mediaRecorder.onstop = () => {
+          try {
+            const blob = new Blob(chunksRef.current, { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const newVideo = {
+              id: generateId(),
+              url,
+              blob,
+              name: `Camera Recording ${new Date().toLocaleString()}`,
+              duration: recordingTime,
+              size: blob.size,
+              date: new Date().toISOString(),
+              mimeType,
+              settings: { ...settings }
+            };
+            setRecordedVideos(prev => [newVideo, ...prev]);
+            setRecordingTime(0);
+            firebaseManager.logRecordingStopped(recordingTime, blob.size);
+            permissionManager.showNotification(
+              'Camera Recording Completed',
+              `Duration: ${formatDuration(recordingTime)}`
+            );
+          } catch (error) {
+            errorHandler.handleRecordingError(error, { action: 'process_camera_recording' });
+          } finally {
+            // Stop all tracks
+            cameraStream.getTracks().forEach(track => track.stop());
+            setCameraStream(null);
+            streamRef.current = null;
+          }
+        };
+        mediaRecorder.start(1000);
+        setRecordingState(RecordingState.RECORDING);
+        firebaseManager.logRecordingStarted(settings);
+        firebaseManager.logUserInteraction('start_camera_recording', { settings });
+        // Handle stream end
+        cameraStream.getVideoTracks()[0].onended = () => {
+          stopRecording();
+        };
+        return;
+      }
+
+      // Screen recording mode (default)
       const permissionResults = await permissionManager.requestAllPermissions();
-      
       if (!permissionResults.results.screen.granted) {
         const error = new Error('Screen capture permission is required to start recording');
         errorHandler.handlePermissionError(error, { permissionResults });
@@ -162,17 +263,12 @@ function App() {
         setShowPermissionsModal(true);
         return;
       }
-
       setCountdown(settings.countdown);
-      
-      // Countdown
       for (let i = settings.countdown; i > 0; i--) {
         setCountdown(i);
         await new Promise(r => setTimeout(r, 1000));
       }
       setCountdown(0);
-
-      // Request screen capture with specific constraints
       const displayStream = await navigator.mediaDevices.getDisplayMedia({
         video: {
           width: { ideal: qualityOptions[settings.videoQuality].width },
@@ -181,10 +277,7 @@ function App() {
         },
         audio: settings.audioEnabled
       });
-
       let combinedStream = displayStream;
-
-      // Add audio if enabled and permission granted
       if (settings.audioEnabled && permissionResults.results.audio.granted) {
         try {
           const audioStream = await navigator.mediaDevices.getUserMedia({ 
@@ -194,7 +287,6 @@ function App() {
               sampleRate: 44100
             }
           });
-          
           const tracks = [...displayStream.getTracks(), ...audioStream.getTracks()];
           combinedStream = new MediaStream(tracks);
         } catch (audioErr) {
@@ -202,32 +294,25 @@ function App() {
           errorHandler.handleRecordingError(audioErr, { type: 'audio_capture' });
         }
       }
-
       streamRef.current = combinedStream;
-
-      // Setup MediaRecorder with error handling
       const mimeType = getSupportedMimeType();
       const mediaRecorder = new MediaRecorder(combinedStream, {
         mimeType,
         videoBitsPerSecond: qualityOptions[settings.videoQuality].bitrate
       });
-
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
-
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
           chunksRef.current.push(e.data);
         }
       };
-
       mediaRecorder.onerror = (event) => {
         const error = new Error(`MediaRecorder error: ${event.error?.message || 'Unknown recording error'}`);
         errorHandler.handleRecordingError(error, { event });
         setError(error.message);
         stopRecording();
       };
-
       mediaRecorder.onstop = () => {
         try {
           const blob = new Blob(chunksRef.current, { type: mimeType });
@@ -243,40 +328,27 @@ function App() {
             mimeType,
             settings: { ...settings }
           };
-          
           setRecordedVideos(prev => [newVideo, ...prev]);
           setRecordingTime(0);
-          
-          // Log recording completion
           firebaseManager.logRecordingStopped(recordingTime, blob.size);
-          
-          // Show notification
           permissionManager.showNotification(
             'Recording Completed',
             `Duration: ${formatDuration(recordingTime)}`
           );
-          
         } catch (error) {
           errorHandler.handleRecordingError(error, { action: 'process_recording' });
         } finally {
-          // Stop all tracks
           combinedStream.getTracks().forEach(track => track.stop());
           streamRef.current = null;
         }
       };
-
-      mediaRecorder.start(1000); // Collect data every second
+      mediaRecorder.start(1000);
       setRecordingState(RecordingState.RECORDING);
-
-      // Log recording start
       firebaseManager.logRecordingStarted(settings);
       firebaseManager.logUserInteraction('start_recording', { settings });
-
-      // Handle stream end (user stops sharing)
       displayStream.getVideoTracks()[0].onended = () => {
         stopRecording();
       };
-
     } catch (err) {
       console.error('Failed to start recording:', err);
       const errorInfo = errorHandler.handleRecordingError(err, { 
@@ -540,11 +612,59 @@ function App() {
             <div className="bg-white rounded-2xl shadow-lg p-8">
               <div className="text-center max-w-2xl mx-auto">
                 <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                  Screen Recording
+                  {settings.recordingMode === 'camera' ? 'Camera Recording' : 'Screen Recording'}
                 </h2>
                 <p className="text-gray-600 mb-8">
-                  Record your screen with audio. Choose your settings and click start to begin recording.
+                  {settings.recordingMode === 'camera'
+                    ? 'Record from your webcam with audio. Choose your settings and click start to begin camera recording.'
+                    : 'Record your screen with audio. Choose your settings and click start to begin recording.'}
                 </p>
+
+                {/* Mode Toggle */}
+                <div className="flex items-center justify-center gap-4 mb-6">
+                  <button
+                    onClick={() => setSettings(s => ({ ...s, recordingMode: 'screen' }))}
+                    className={cn(
+                      'px-4 py-2 rounded-lg font-medium transition-colors',
+                      settings.recordingMode === 'screen'
+                        ? 'bg-primary text-white'
+                        : 'text-gray-600 hover:bg-gray-100'
+                    )}
+                  >
+                    <FiMonitor className="w-4 h-4 inline mr-2" />
+                    Screen
+                  </button>
+                  <button
+                    onClick={() => setSettings(s => ({ ...s, recordingMode: 'camera' }))}
+                    className={cn(
+                      'px-4 py-2 rounded-lg font-medium transition-colors',
+                      settings.recordingMode === 'camera'
+                        ? 'bg-primary text-white'
+                        : 'text-gray-600 hover:bg-gray-100'
+                    )}
+                  >
+                    <FiVideo className="w-4 h-4 inline mr-2" />
+                    Camera
+                  </button>
+                </div>
+
+                {/* Camera Preview */}
+                {settings.recordingMode === 'camera' && cameraStream && (
+                  <div className="flex justify-center mb-4">
+                    <video
+                      ref={videoPreviewRef}
+                      autoPlay
+                      muted
+                      playsInline
+                      style={{ width: 320, height: 180, borderRadius: 12, background: '#222' }}
+                      onLoadedMetadata={e => {
+                        if (videoPreviewRef.current) {
+                          videoPreviewRef.current.srcObject = cameraStream;
+                        }
+                      }}
+                    />
+                  </div>
+                )}
 
                 {/* Recording Controls */}
                 <div className="flex items-center justify-center gap-4">
@@ -932,88 +1052,98 @@ function App() {
                 <FiX className="w-5 h-5 text-gray-600" />
               </button>
             </div>
-            
             <div className="p-6 space-y-4">
               <div className="text-center">
                 <FiAlertCircle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Screen Recording Permissions
+                  {settings.recordingMode === 'camera' ? 'Camera Recording Permissions' : 'Screen Recording Permissions'}
                 </h3>
                 <p className="text-gray-600">
-                  This app needs permissions to record your screen and optionally capture audio.
+                  {settings.recordingMode === 'camera'
+                    ? 'This app needs permissions to record from your camera and optionally capture audio.'
+                    : 'This app needs permissions to record your screen and optionally capture audio.'}
                 </p>
               </div>
-
-              {permissionStatus && (
-                <div className="space-y-3">
-                  {/* Screen Permission */}
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
-                    <div className="flex items-center gap-3">
-                      <FiMonitor className="w-5 h-5 text-gray-600" />
-                      <div>
-                        <p className="font-medium text-gray-900">Screen Capture</p>
-                        <p className="text-sm text-gray-500">Required for recording</p>
+              <div className="space-y-3">
+                {settings.recordingMode === 'camera' ? (
+                  <>
+                    {/* Camera Permission */}
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+                      <div className="flex items-center gap-3">
+                        <FiVideo className="w-5 h-5 text-gray-600" />
+                        <div>
+                          <p className="font-medium text-gray-900">Camera</p>
+                          <p className="text-sm text-gray-500">Required for camera recording</p>
+                        </div>
                       </div>
+                      {/* No persistent camera permission state, so always show yellow */}
+                      <div className="w-3 h-3 rounded-full bg-yellow-500" />
                     </div>
-                    <div className={cn(
-                      "w-3 h-3 rounded-full",
-                      permissionStatus.permissions.screen 
-                        ? "bg-green-500" 
-                        : "bg-red-500"
-                    )} />
-                  </div>
-
-                  {/* Audio Permission */}
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
-                    <div className="flex items-center gap-3">
-                      <FiMic className="w-5 h-5 text-gray-600" />
-                      <div>
-                        <p className="font-medium text-gray-900">Microphone</p>
-                        <p className="text-sm text-gray-500">Optional for audio</p>
+                    {/* Audio Permission */}
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+                      <div className="flex items-center gap-3">
+                        <FiMic className="w-5 h-5 text-gray-600" />
+                        <div>
+                          <p className="font-medium text-gray-900">Microphone</p>
+                          <p className="text-sm text-gray-500">Optional for audio</p>
+                        </div>
                       </div>
+                      <div className="w-3 h-3 rounded-full bg-yellow-500" />
                     </div>
-                    <div className={cn(
-                      "w-3 h-3 rounded-full",
-                      permissionStatus.permissions.audio 
-                        ? "bg-green-500" 
-                        : "bg-yellow-500"
-                    )} />
-                  </div>
-
-                  {/* Notifications Permission */}
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
-                    <div className="flex items-center gap-3">
-                      <FiInfo className="w-5 h-5 text-gray-600" />
-                      <div>
-                        <p className="font-medium text-gray-900">Notifications</p>
-                        <p className="text-sm text-gray-500">Optional for alerts</p>
+                  </>
+                ) : (
+                  <>
+                    {/* Screen Permission */}
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+                      <div className="flex items-center gap-3">
+                        <FiMonitor className="w-5 h-5 text-gray-600" />
+                        <div>
+                          <p className="font-medium text-gray-900">Screen Capture</p>
+                          <p className="text-sm text-gray-500">Required for recording</p>
+                        </div>
                       </div>
+                      <div className={cn(
+                        "w-3 h-3 rounded-full",
+                        permissionStatus?.permissions.screen 
+                          ? "bg-green-500" 
+                          : "bg-red-500"
+                      )} />
                     </div>
-                    <div className={cn(
-                      "w-3 h-3 rounded-full",
-                      permissionStatus.permissions.notifications 
-                        ? "bg-green-500" 
-                        : "bg-gray-300"
-                    )} />
-                  </div>
-                </div>
-              )}
-
-              {!permissionStatus?.permissions.screen && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <FiAlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
-                    <div>
-                      <h4 className="font-medium text-yellow-800">Screen Permission Required</h4>
-                      <p className="text-sm text-yellow-700 mt-1">
-                        You must grant screen capture permission to start recording. 
-                        Click the button below to request permissions again.
-                      </p>
+                    {/* Audio Permission */}
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+                      <div className="flex items-center gap-3">
+                        <FiMic className="w-5 h-5 text-gray-600" />
+                        <div>
+                          <p className="font-medium text-gray-900">Microphone</p>
+                          <p className="text-sm text-gray-500">Optional for audio</p>
+                        </div>
+                      </div>
+                      <div className={cn(
+                        "w-3 h-3 rounded-full",
+                        permissionStatus?.permissions.audio 
+                          ? "bg-green-500" 
+                          : "bg-yellow-500"
+                      )} />
                     </div>
-                  </div>
-                </div>
-              )}
-
+                    {/* Notifications Permission */}
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+                      <div className="flex items-center gap-3">
+                        <FiInfo className="w-5 h-5 text-gray-600" />
+                        <div>
+                          <p className="font-medium text-gray-900">Notifications</p>
+                          <p className="text-sm text-gray-500">Optional for alerts</p>
+                        </div>
+                      </div>
+                      <div className={cn(
+                        "w-3 h-3 rounded-full",
+                        permissionStatus?.permissions.notifications 
+                          ? "bg-green-500" 
+                          : "bg-gray-300"
+                      )} />
+                    </div>
+                  </>
+                )}
+              </div>
               <div className="flex flex-col gap-3 pt-4">
                 <button
                   onClick={checkPermissions}
@@ -1022,7 +1152,6 @@ function App() {
                 >
                   {isLoading ? 'Checking...' : 'Request Permissions'}
                 </button>
-                
                 <button
                   onClick={() => setShowPermissionsModal(false)}
                   className="w-full px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
@@ -1048,4 +1177,4 @@ function App() {
   );
 }
 
-export default App
+export default App;
